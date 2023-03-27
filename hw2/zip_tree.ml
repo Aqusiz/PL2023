@@ -21,12 +21,12 @@ let goUp: location -> location = fun loc ->
   match loc with
   | LOC(t, TOP) -> raise (NOMOVE "up of top")
   | LOC(t, HAND(left, up, right)) ->
-    let node: tree list -> tree = fun tree_list -> NODE tree_list in
-    let rec new_tree_list: tree list -> tree list -> tree list -> tree list 
-    = fun lt t rt ->
-      match lt, t, rt with
-      | [], t, [] -> t
-      | l::lt, t, [] -> new_tree_list lt (l::t) []
-      | [], t, rt -> List.append t rt
-      | lt, t, rt -> new_tree_list lt (List.append t rt) [] in
+      let node: tree list -> tree = fun tree_list -> NODE tree_list in
+      let rec new_tree_list: tree list -> tree list -> tree list -> tree list 
+      = fun lt t rt ->
+        match lt, t, rt with
+        | [], t, [] -> t
+        | l::lt, t, [] -> new_tree_list lt (l::t) []
+        | [], t, rt -> List.append t rt
+        | lt, t, rt -> new_tree_list lt (List.append t rt) [] in
       LOC(node (new_tree_list left [t] right), up)
