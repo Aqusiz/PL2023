@@ -228,11 +228,18 @@ struct
     | EQUAL (e1, e2) ->
       let (v1, mem') = eval mem env e1 in
       let (v2, mem'') = eval mem' env e2 in
-      (Bool (v1 == v2), mem'')
+      let b = match v1, v2 with
+        | Num n1, Num n2 -> n1 == n2
+        | Bool b1, Bool b2 -> b1 == b2
+        | Unit, Unit -> true
+        | _ -> false in
+      (Bool b, mem'')
     | LESS (e1, e2) ->
       let (v1, mem') = eval mem env e1 in
       let (v2, mem'') = eval mem' env e2 in
-      (Bool (v1 < v2), mem'')
+      let n1 = value_int v1 in
+      let n2 = value_int v2 in
+      (Bool (n1 < n2), mem'')
     | NOT e ->
       let (v, mem') = eval mem env e in
       let b = value_bool v in
