@@ -194,6 +194,13 @@ struct
       let (v, mem') = eval mem env e in
       let l = lookup_env_loc env x in
       (v, Mem.store mem' l v)
+    | TRUE -> (Bool true, mem)
+    | FALSE -> (Bool false, mem)
+    | NUM n -> (Num n, mem)
+    | UNIT -> (Unit, mem)
+    | VAR x -> 
+      let l = lookup_env_loc env x in
+      (Mem.load mem l, mem)
     | _ -> failwith "Unimplemented" (* TODO : Implement rest of the cases *)
 
   let run (mem, env, pgm) = 
