@@ -237,6 +237,22 @@ struct
       let (v, mem') = eval mem env e in
       let b = value_bool v in
       (Bool (not b), mem')
+    | SEQ (e1, e2) ->
+      let (v1, mem') = eval mem env e1 in
+      (eval mem' env e2)
+    | IF (e, e1, e2) ->
+      let (v_cond, mem') = eval mem env e in
+      let b = value_bool v_cond in
+      if b then eval mem' env e1 else eval mem' env e2
+    | WHILE (e1, e2) ->
+      let (v_cond, mem') = eval mem env e1 in
+      let b = value_bool v_cond in
+      if b then 
+        let (v1, mem1) = eval mem' env e2 in
+        let (v2, mem2) = eval mem1 env (WHILE (e1, e2)) in
+        (v2, mem2)
+      else
+        (Unit, mem')
     | _ -> failwith "Unimplemented" (* TODO : Implement rest of the cases *)
 
   let run (mem, env, pgm) = 
