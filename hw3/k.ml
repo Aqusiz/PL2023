@@ -253,7 +253,6 @@ struct
         (v2, mem2)
       else
         (Unit, mem')
-    | _ -> failwith "Unimplemented" (* TODO : Implement rest of the cases *)
 
   let run (mem, env, pgm) = 
     let (v, _ ) = eval mem env pgm in
