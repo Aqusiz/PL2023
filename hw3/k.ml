@@ -201,6 +201,42 @@ struct
     | VAR x -> 
       let l = lookup_env_loc env x in
       (Mem.load mem l, mem)
+    | ADD (e1, e2) ->
+      let (v1, mem') = eval mem env e1 in
+      let (v2, mem'') = eval mem' env e2 in
+      let n1 = value_int v1 in
+      let n2 = value_int v2 in
+      (Num (n1 + n2), mem'')
+    | SUB (e1, e2) ->
+      let (v1, mem') = eval mem env e1 in
+      let (v2, mem'') = eval mem' env e2 in
+      let n1 = value_int v1 in
+      let n2 = value_int v2 in
+      (Num (n1 - n2), mem'')
+    | MUL (e1, e2) ->
+      let (v1, mem') = eval mem env e1 in
+      let (v2, mem'') = eval mem' env e2 in
+      let n1 = value_int v1 in
+      let n2 = value_int v2 in
+      (Num (n1 * n2), mem'')
+    | DIV (e1, e2) ->
+      let (v1, mem') = eval mem env e1 in
+      let (v2, mem'') = eval mem' env e2 in
+      let n1 = value_int v1 in
+      let n2 = value_int v2 in
+      (Num (n1 / n2), mem'')
+    | EQUAL (e1, e2) ->
+      let (v1, mem') = eval mem env e1 in
+      let (v2, mem'') = eval mem' env e2 in
+      (Bool (v1 == v2), mem'')
+    | LESS (e1, e2) ->
+      let (v1, mem') = eval mem env e1 in
+      let (v2, mem'') = eval mem' env e2 in
+      (Bool (v1 < v2), mem'')
+    | NOT e ->
+      let (v, mem') = eval mem env e in
+      let b = value_bool v in
+      (Bool (not b), mem')
     | _ -> failwith "Unimplemented" (* TODO : Implement rest of the cases *)
 
   let run (mem, env, pgm) = 
