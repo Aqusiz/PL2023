@@ -222,7 +222,72 @@ struct
       let (v, mem') = eval mem env e in
       let l = lookup_env_loc env x in
       (v, Mem.store mem' l v)
-    | _ -> failwith "Unimplemented" (* TODO : Implement rest of the cases *)
+    | TRUE -> (Bool true, mem)
+    | FALSE -> (Bool false, mem)
+    | NUM n -> (Num n, mem)
+    | UNIT -> (Unit, mem)
+    | VAR x -> 
+      let l = lookup_env_loc env x in
+      (Mem.load mem l, mem)
+    | ADD (e1, e2) ->
+      let (v1, mem') = eval mem env e1 in
+      let (v2, mem'') = eval mem' env e2 in
+      let n1 = value_int v1 in
+      let n2 = value_int v2 in
+      (Num (n1 + n2), mem'')
+    | SUB (e1, e2) ->
+      let (v1, mem') = eval mem env e1 in
+      let (v2, mem'') = eval mem' env e2 in
+      let n1 = value_int v1 in
+      let n2 = value_int v2 in
+      (Num (n1 - n2), mem'')
+    | MUL (e1, e2) ->
+      let (v1, mem') = eval mem env e1 in
+      let (v2, mem'') = eval mem' env e2 in
+      let n1 = value_int v1 in
+      let n2 = value_int v2 in
+      (Num (n1 * n2), mem'')
+    | DIV (e1, e2) ->
+      let (v1, mem') = eval mem env e1 in
+      let (v2, mem'') = eval mem' env e2 in
+      let n1 = value_int v1 in
+      let n2 = value_int v2 in
+      (Num (n1 / n2), mem'')
+    | EQUAL (e1, e2) ->
+      let (v1, mem') = eval mem env e1 in
+      let (v2, mem'') = eval mem' env e2 in
+      let b = match v1, v2 with
+        | Num n1, Num n2 -> n1 == n2
+        | Bool b1, Bool b2 -> b1 == b2
+        | Unit, Unit -> true
+        | _ -> false in
+      (Bool b, mem'')
+    | LESS (e1, e2) ->
+      let (v1, mem') = eval mem env e1 in
+      let (v2, mem'') = eval mem' env e2 in
+      let n1 = value_int v1 in
+      let n2 = value_int v2 in
+      (Bool (n1 < n2), mem'')
+    | NOT e ->
+      let (v, mem') = eval mem env e in
+      let b = value_bool v in
+      (Bool (not b), mem')
+    | SEQ (e1, e2) ->
+      let (v1, mem') = eval mem env e1 in
+      (eval mem' env e2)
+    | IF (e, e1, e2) ->
+      let (v_cond, mem') = eval mem env e in
+      let b = value_bool v_cond in
+      if b then eval mem' env e1 else eval mem' env e2
+    | WHILE (e1, e2) ->
+      let (v_cond, mem') = eval mem env e1 in
+      let b = value_bool v_cond in
+      if b then 
+        let (v1, mem1) = eval mem' env e2 in
+        let (v2, mem2) = eval mem1 env (WHILE (e1, e2)) in
+        (v2, mem2)
+      else
+        (Unit, mem')
 
   let run (mem, env, pgm) = 
     let (v, _ ) = eval mem env pgm in
