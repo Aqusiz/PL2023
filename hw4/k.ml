@@ -325,11 +325,28 @@ struct
         (eval mem (Env.bind env' f (Proc (x_list, e', env'))) e')
     | RECORD xe_list ->
       if (List.length xe_list) == 0 then (Unit, mem)
-      else 
-        (eval mem env e)
-    | _ -> (eval mem env e)
+      else
+        let rec make_new_record mem env r xe_list = match xe_list with
+        | [] -> r, mem
+        | xe::xe_list ->
+          let (x, e) = (fst xe, snd xe) in
+          let (v, mem') = eval mem env e in
+          let (l, mem'') = Mem.alloc mem' in
+          let new_r = fun id -> if (compare id x) == 0 then l else r id in
+          make_new_record (Mem.store mem'' l v) (Env.bind env x (Addr l)) new_r xe_list
+        in
+        let (new_record, mem') = make_new_record mem env (fun _ -> raise (Error "")) xe_list in
+        (Record new_record, mem')
+    | FIELD (e, x) ->
+        let (v, mem') = eval mem env e in
+        let r = value_record v in
+        (Mem.load mem' (r x), mem')
+    | ASSIGNF (e1, x, e2) ->
+        let (v1, mem1) = eval mem env e1 in
+        let r = value_record v1 in
+        let (v2, mem2) = eval mem1 env e2 in
+        (v2, (Mem.store mem2 (r x) v2))
 
-      
   let run (mem, env, pgm) = 
     let (v, _ ) = eval mem env pgm in
     v
