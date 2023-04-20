@@ -288,7 +288,48 @@ struct
         (v2, mem2)
       else
         (Unit, mem')
+    | LETF (f, x_list, e1, e2) ->
+        eval mem (Env.bind env f (Proc (x_list, e1, env))) e2
+    | CALLV (f, e_list) ->
+        let (x_list, e', env') = lookup_env_proc env f in
+        (* helper function: 
+           store every id->addr & addr->value *)
+        let rec set_premise mem env x_list e_list =
+          match x_list, e_list with
+          | [], [] -> (mem, env)
+          | x::x_list, e::e_list ->
+            let (v, mem') = eval mem env e in
+            let (l, mem'') = Mem.alloc mem' in
+            set_premise (Mem.store mem'' l v) (Env.bind env x (Addr l)) x_list e_list
+          | _ -> raise (Error "InvalidArg")
+        in
+        let (mem'', env'') = set_premise mem env x_list e_list in
+        (* Env need to bind f? *)
+        (eval mem'' (Env.bind env'' f (Proc (x_list, e', env'))) e')
+    | CALLR (f, y_list) ->
+        let (x_list, e', _) = lookup_env_proc env f in
+        (* helper function:
+           match every x with x->sigma(y) *)
+        let rec set_premise env x_list y_list =
+          match x_list, y_list with
+          | [], [] -> env
+          | x::x_list, y::y_list ->
+            let loc = match Env.lookup env y with
+            | Addr l -> Addr l
+            | _ -> raise (Error "")
+            in
+            set_premise (Env.bind env x loc) x_list y_list
+          | _ -> raise (Error "InvalidArg")
+        in
+        let env' = set_premise env x_list y_list in
+        (eval mem (Env.bind env' f (Proc (x_list, e', env'))) e')
+    | RECORD xe_list ->
+      if (List.length xe_list) == 0 then (Unit, mem)
+      else 
+        (eval mem env e)
+    | _ -> (eval mem env e)
 
+      
   let run (mem, env, pgm) = 
     let (v, _ ) = eval mem env pgm in
     v
