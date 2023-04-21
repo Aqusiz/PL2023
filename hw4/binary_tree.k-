@@ -1,0 +1,69 @@
+(* hw 4-3 of 2017-16140 *)
+let proc leaf (n) =
+    {left := {}, v := n, right := {}} in
+
+let proc makeLtree (n, tree) =
+    {left := tree, v := n, right := {}} in
+
+let proc makeRtree (n, tree) =
+    {left := {}, v := n, right := tree} in
+
+let proc makeTree (n, l, r) =
+    {left := l, v := n, right := r} in
+
+let proc isEmpty (tree) =
+    if (tree = unit) then true else false in
+
+let proc rTree (tree) =
+    tree.right in
+
+let proc lTree (tree) =
+    tree.left in
+
+let proc nodeVal (tree) =
+    tree.v in
+
+let proc dft (tree) =
+    if (tree = unit) then unit 
+    else (
+        write (nodeVal (tree));
+        if (isEmpty (lTree (tree))) then unit else dft (lTree (tree));
+        if (isEmpty (rTree (tree))) then unit else dft (rTree (tree))
+    )
+in
+
+let proc bft (tree) =
+    (* helper function 1: find tree's depth *)
+    let proc find_depth (tree, depth) =
+        if (tree = unit) then depth
+        else (
+            let left_depth := depth in
+            let right_depth := depth in
+            let d := depth + 1 in
+            if (isEmpty (lTree (tree))) then unit else left_depth := find_depth(lTree (tree), d);
+            if (isEmpty (rTree (tree))) then unit else right_depth := find_depth(rTree (tree), d);
+            if (left_depth < right_depth) then right_depth else left_depth
+        )
+    in
+    (* helper function 2: dfs with depth *)
+    let proc dfs (tree, target, now) =
+        if (tree = unit) then unit
+        else (
+            if (now = target) then write (nodeVal (tree)) else unit;
+            let new_now := now + 1 in
+            if (isEmpty (lTree (tree))) then unit else dfs (lTree (tree), target, new_now);
+            if (isEmpty (rTree (tree))) then unit else dfs (rTree (tree), target, new_now)
+        )
+    in
+    (* print in bfs order *)
+    if (tree = unit) then unit
+    else (
+        let target_d := find_depth (tree, 1) in
+        let idx := 1 in
+        while (idx < (target_d + 1)) do (
+            dfs (tree, idx, 1);
+            idx := idx + 1
+        )
+    )
+in
+2019
