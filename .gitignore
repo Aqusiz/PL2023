@@ -1,0 +1,9 @@
+.DS_Store
+*.cmi
+*.cmo
+*.mli
+lexer.ml
+parser.ml
+main.ml
+k.ml
+run
