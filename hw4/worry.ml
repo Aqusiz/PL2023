@@ -30,6 +30,16 @@ let compare: gift -> gift -> int = fun a b ->
   if a > b then 1
   else if a < b then -1
   else 0
+let rec compare_list: gift list -> gift list -> int = fun l1 l2 ->
+  if (List.length l1) > (List.length l2) then 1
+  else if (List.length l1) < (List.length l2) then -1
+  else (
+    let (a, a_tl) = (List.hd l1, List.tl l1) in
+    let (b, b_tl) = (List.hd l2, List.tl l2) in
+    if a > b then 1
+    else if a < b then -1
+    else compare_list a_tl b_tl
+  )
 let shoppingList: require list -> (id * gift list) list = fun require_list ->
   (* make a set of all gifts *)
   let rec make_gift_set: require list -> IntSet.t = fun r_list -> match r_list with
@@ -50,12 +60,21 @@ let shoppingList: require list -> (id * gift list) list = fun require_list ->
   in
   let gifts = List.sort compare (List.of_seq (IntSet.to_seq (make_gift_set require_list))) in
   let _ = print_endline (value_gift_list gifts) in
+  (* make every possibe gift list (= powerset) *)
+  let rec make_all_glist: gift list -> gift list list = fun g_list ->
+    match g_list with
+    | [] -> [[]]
+    | g::g_tl -> 
+      let subsets = make_all_glist g_tl in
+      subsets @ List.map (fun subset -> g::subset) subsets
+  in
+  let gl_list = List.sort compare_list (make_all_glist gifts) in
+  let _ = List.iter (fun gl -> print_string ("[" ^ value_gift_list gl ^ "] ")) gl_list in
   [(A, []);(B, []);(C, []);(D, []);(E, [])]
-(*
+
 let req_list = 
   [(A, [Items [1;2];Common (Same B, Same C)]);
   (B, [Common (Same C, Items [2;3])]);
   (C, [Items [1];Except (Same A, [3])]);
   (D, []);(E, [])]
 let _ = shoppingList req_list
-*)
