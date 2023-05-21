@@ -1,0 +1,237 @@
+   0  $accept : %entry% $end
+
+   1  program : exp EOF
+
+   2  exp : ID
+   3      | LAMBDA ID DOT exp
+   4      | LP exp RP
+   5      | exp exp
+   6      | LET ID EQUAL exp IN exp
+
+   7  %entry% : '\001' program
+
+state 0
+	$accept : . %entry% $end  (0)
+
+	'\001'  shift 1
+	.  error
+
+	%entry%  goto 2
+
+
+state 1
+	%entry% : '\001' . program  (7)
+
+	LAMBDA  shift 3
+	ID  shift 4
+	LET  shift 5
+	LP  shift 6
+	.  error
+
+	program  goto 7
+	exp  goto 8
+
+
+state 2
+	$accept : %entry% . $end  (0)
+
+	$end  accept
+
+
+state 3
+	exp : LAMBDA . ID DOT exp  (3)
+
+	ID  shift 9
+	.  error
+
+
+state 4
+	exp : ID .  (2)
+
+	.  reduce 2
+
+
+state 5
+	exp : LET . ID EQUAL exp IN exp  (6)
+
+	ID  shift 10
+	.  error
+
+
+state 6
+	exp : LP . exp RP  (4)
+
+	LAMBDA  shift 3
+	ID  shift 4
+	LET  shift 5
+	LP  shift 6
+	.  error
+
+	exp  goto 11
+
+
+state 7
+	%entry% : '\001' program .  (7)
+
+	.  reduce 7
+
+
+state 8
+	program : exp . EOF  (1)
+	exp : exp . exp  (5)
+
+	LAMBDA  shift 3
+	ID  shift 4
+	LET  shift 5
+	LP  shift 6
+	EOF  shift 12
+	.  error
+
+	exp  goto 13
+
+
+state 9
+	exp : LAMBDA ID . DOT exp  (3)
+
+	DOT  shift 14
+	.  error
+
+
+state 10
+	exp : LET ID . EQUAL exp IN exp  (6)
+
+	EQUAL  shift 15
+	.  error
+
+
+state 11
+	exp : LP exp . RP  (4)
+	exp : exp . exp  (5)
+
+	LAMBDA  shift 3
+	ID  shift 4
+	LET  shift 5
+	LP  shift 6
+	RP  shift 16
+	.  error
+
+	exp  goto 13
+
+
+state 12
+	program : exp EOF .  (1)
+
+	.  reduce 1
+
+
+13: shift/reduce conflict (shift 5, reduce 5) on LET
+state 13
+	exp : exp . exp  (5)
+	exp : exp exp .  (5)
+
+	LAMBDA  shift 3
+	LET  shift 5
+	ID  reduce 5
+	IN  reduce 5
+	LP  reduce 5
+	RP  reduce 5
+	EOF  reduce 5
+
+	exp  goto 13
+
+
+state 14
+	exp : LAMBDA ID DOT . exp  (3)
+
+	LAMBDA  shift 3
+	ID  shift 4
+	LET  shift 5
+	LP  shift 6
+	.  error
+
+	exp  goto 17
+
+
+state 15
+	exp : LET ID EQUAL . exp IN exp  (6)
+
+	LAMBDA  shift 3
+	ID  shift 4
+	LET  shift 5
+	LP  shift 6
+	.  error
+
+	exp  goto 18
+
+
+state 16
+	exp : LP exp RP .  (4)
+
+	.  reduce 4
+
+
+17: shift/reduce conflict (shift 5, reduce 3) on LET
+state 17
+	exp : LAMBDA ID DOT exp .  (3)
+	exp : exp . exp  (5)
+
+	LAMBDA  shift 3
+	ID  shift 4
+	LET  shift 5
+	LP  shift 6
+	IN  reduce 3
+	RP  reduce 3
+	EOF  reduce 3
+
+	exp  goto 13
+
+
+state 18
+	exp : exp . exp  (5)
+	exp : LET ID EQUAL exp . IN exp  (6)
+
+	LAMBDA  shift 3
+	ID  shift 4
+	IN  shift 19
+	LET  shift 5
+	LP  shift 6
+	.  error
+
+	exp  goto 13
+
+
+state 19
+	exp : LET ID EQUAL exp IN . exp  (6)
+
+	LAMBDA  shift 3
+	ID  shift 4
+	LET  shift 5
+	LP  shift 6
+	.  error
+
+	exp  goto 20
+
+
+20: shift/reduce conflict (shift 5, reduce 6) on LET
+state 20
+	exp : exp . exp  (5)
+	exp : LET ID EQUAL exp IN exp .  (6)
+
+	LAMBDA  shift 3
+	ID  shift 4
+	LET  shift 5
+	LP  shift 6
+	IN  reduce 6
+	RP  reduce 6
+	EOF  reduce 6
+
+	exp  goto 13
+
+
+State 13 contains 1 shift/reduce conflict.
+State 17 contains 1 shift/reduce conflict.
+State 20 contains 1 shift/reduce conflict.
+
+
+13 terminals, 4 nonterminals
+8 grammar rules, 21 states
