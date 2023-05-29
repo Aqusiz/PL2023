@@ -42,23 +42,59 @@ let rec xcps' exp =
   let k_h = new_name () in
   match exp with
   (* Constant expressions *)
-  | Num n -> Fn (k_h, (* Fill in here *) )
-  | Var x -> Fn (k_h, (* Fill in here *) )
-  | Fn (x, e) -> Fn (k_h, (* Fill in here *) )
-  | Fnr (f, x, e) Fn (k_h, (* Fill in here *) )
+  | Num n -> Fn (k_h, App (Fst (Var k_h), Num n ))
+  | Var x -> Fn (k_h, App (Fst (Var k_h), Var x) )
+  | Fn (x, e) -> Fn (k_h, App (Fst (Var k_h), Fn (x, xcps' e)) )
+  | Fnr (f, x, e) -> Fn (k_h, App (Fst (Var k_h), Fnr (f, x, xcps' e)) )
   (* Non constant expressions *)
-  | App (e1, e2) -> Fn (k_h, (* Fill in here *) )
-  | Ifp (e1, e2, e3) -> Fn (k_h, (* Fill in here *) )
+  | App (e1, e2) -> 
+    let f = new_name () in
+    let v = new_name () in
+    Fn (k_h,
+        App (xcps' e1,
+          Pair (
+            Fn (f,
+                App (xcps' e2,
+                  Pair (
+                    Fn (v, App (App (Var f, Var v), Var k_h)),
+                    Snd (Var k_h)
+                  )
+                )
+            ),
+            Snd (Var k_h)
+          )
+        )
+    )
+  | Ifp (e1, e2, e3) -> 
+    let v1 = new_name () in
+    let v2 = new_name () in
+    let v3 = new_name () in
+    Fn (k_h, 
+        App (xcps' e1,
+          Pair(Fn (v1,
+                  Ifp (Var v1, 
+                      (App (xcps' e2, 
+                          Pair (Fn (v2, App (Fst (Var k_h), Var v2)),
+                                Snd (Var k_h)))),
+                      (App (xcps' e3,
+                          Pair (Fn (v3, App (Fst (Var k_h), Var v3)),
+                                Snd (Var k_h))))
+                      )
+                  ),
+                Snd (Var k_h)
+              )
+            )
+        )
   | Add (e1, e2) ->
     let v1 = new_name () in
     let v2 = new_name () in
     Fn (k_h, 
-      App (xcps' e1, 
+      App (xcps' e1,
         Pair (
-          Fn (v1, 
-            App (xcps' e2, 
+          Fn (v1,
+            App (xcps' e2,
               Pair (
-                Fn (v2, 
+                Fn (v2,
                   App (Fst (Var k_h), Add (Var v1, Var v2))
                 ),
                 Snd (Var k_h)
@@ -69,10 +105,68 @@ let rec xcps' exp =
         )
       )
     )
-  | Pair (e1, e2) -> Fn (k_h, (* Fill in here *) )
-  | Fst e -> Fn (k_h, (* Fill in here *) )
-  | Snd e -> Fn (k_h, (* Fill in here *) )
-  | Raise e -> Fn (k_h, (* Fill in here *) )
-  | Handle (e1, x, e2) -> Fn (k_h, (* Fill in here *) )
+  | Pair (e1, e2) -> 
+    let v1 = new_name () in
+    let v2 = new_name () in
+    Fn (k_h,
+        App (xcps' e1, 
+          Pair (
+            Fn (v1,
+              App (xcps' e2,
+                Pair (
+                  Fn (v2, 
+                    App (Fst (Var k_h), Pair (Var v1, Var v2))
+                  ),
+                  Snd (Var k_h)
+                )
+              )
+            ),
+            Snd (Var k_h)
+          )) )
+  | Fst e -> 
+    let p = new_name () in
+    Fn (k_h,
+        App (xcps' e,
+          Pair (
+            Fn (p,
+              App (Fst (Var k_h), Fst (Var p))
+            ),
+            Snd (Var k_h)
+          )
+        )
+      )
+  | Snd e -> 
+    let p = new_name () in
+    Fn (k_h,
+      App (xcps' e,
+        Pair (
+          Fn (p,
+            App (Fst (Var k_h), Snd (Var p))
+          ),
+          Snd (Var k_h)
+        )
+      )
+    )
+  | Raise e -> 
+    let v = new_name () in
+    Fn (k_h,
+        App (xcps' e,
+          Pair (
+            Fn (v, App (Snd (Var k_h), Var v)),
+            Fn (v, App (Snd (Var k_h), Var v))
+          )
+        )
+      )
+  | Handle (e1, x, e2) ->
+    let v1 = new_name () in
+    let e2_f = Fn (x, xcps' e2) in
+    Fn (k_h,
+        App (xcps' e1,
+          Pair (
+            Fn (v1, App (Fst (Var k_h), Var v1)),
+            Fn (v1, App (App (e2_f, Var v1), Var k_h))
+          )
+        )
+    )
 
 let xcps exp = xcps' (alpha_conv exp [])
