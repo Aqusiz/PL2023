@@ -54,6 +54,8 @@ let add_sol: var -> typ -> sol = fun x t ->
     | TFun (t1, t2) -> TFun (sol' t1, sol' t2)
     | TVar x' -> if x = x' then t else t'
   in sol'
+let ibs: typ list ref = ref []
+let ibsl: typ list ref = ref []
 let rec v: gamma * M.exp * typ -> tyeqn = fun (g, e, t) ->
   match e with
   | M.CONST N _ -> Eqn (t, TInt)
@@ -77,10 +79,13 @@ let rec v: gamma * M.exp * typ -> tyeqn = fun (g, e, t) ->
       | M.AND | M.OR -> Sys (Sys (Eqn (t, TBool), v (g, e1, TBool)), v (g, e2, TBool))
       | M.EQ -> 
         let alpha = new_var () in
+        let _ = ibsl := (TVar alpha) :: !ibsl in
         Sys (Sys (Eqn (t, TBool), v (g, e1, TVar alpha)), v (g, e2, TVar alpha))
     )
   | M.READ -> Eqn (t, TInt)
-  | M.WRITE e -> v (g, e, t)
+  | M.WRITE e -> 
+    let _ = ibs := t :: !ibs in
+    v (g, e, t)
   | M.PAIR (e1, e2) ->
     let alpha1 = new_var () in
     let alpha2 = new_var () in
@@ -99,7 +104,7 @@ let rec v: gamma * M.exp * typ -> tyeqn = fun (g, e, t) ->
       | M.REC (f, x, e) ->
         let alpha1 = new_var () in
         let alpha2 = new_var () in
-        Sys (v ((g @+ (f, TFun (TVar alpha2, TVar alpha1))) @+ (x, TVar alpha1), e, TVar alpha1), 
+        Sys (v ((g @+ (f, TFun (TVar alpha2, TVar alpha1))) @+ (x, TVar alpha2), e, TVar alpha1), 
             v ((g @+ (f, TFun (TVar alpha2, TVar alpha1))) @+ (x, TVar alpha2), e2, t))
     )
   | M.MALLOC e ->
@@ -124,15 +129,6 @@ let rec subst: sol -> tyeqn -> tyeqn = fun s u ->
   | Eqn (t1, t2) -> Eqn (s t1, s t2)
   | Sys (u1, u2) -> Sys (subst s u1, subst s u2)
 
-let rec typ_to_string: typ -> string = fun t ->
-  match t with
-  | TInt -> "TInt"
-  | TBool -> "TBool"
-  | TString -> "TString"
-  | TPair (e1, e2) -> "TPair (" ^ typ_to_string e1 ^ ", " ^ typ_to_string e2 ^")"
-  | TLoc l -> "TLoc " ^ typ_to_string l
-  | TFun (e1, e2) -> "TFun (" ^ typ_to_string e1 ^ ", " ^ typ_to_string e2 ^ ")"
-  | TVar x -> "TVar " ^ x
 
 let rec unify': typ -> typ -> sol = fun t1 t2 ->
   if t1 @= t2 then emptySol
@@ -148,10 +144,7 @@ let rec unify': typ -> typ -> sol = fun t1 t2 ->
       s1 @@+ s2  
     | TVar x, _ -> if not (appear x t2) then add_sol x t2 else raise (M.TypeError "type error in unify' 1")
     | _, TVar x -> if not (appear x t1) then add_sol x t1 else raise (M.TypeError "type error in unify' 2")
-    | _ -> 
-      let _ = print_string (typ_to_string t1) in
-      let _ = print_endline (" " ^ (typ_to_string t2)) in
-      raise (M.TypeError "type error in unify' 3")
+    | _ -> raise (M.TypeError "type error in unify' 3")
   )
 
 let rec unify: tyeqn -> sol -> sol = fun u s ->
@@ -166,6 +159,24 @@ let check : M.exp -> M.types = fun exp ->
   let t = TVar alpha in
   let eqn = v (emptyGamma, exp, t) in
   let u = unify eqn emptySol in
+  let rec check_ibs: typ list -> _ = fun ibs ->
+    match ibs with
+    | [] -> ()
+    | h :: t -> (
+      match u h with
+      | TInt | TBool | TString -> check_ibs t
+      | _ -> raise (M.TypeError "type error: not Int, Bool, String")
+    )
+  in let _ = check_ibs !ibs in
+  let rec check_ibsl: typ list -> _ = fun ibsl ->
+    match ibsl with
+    | [] -> ()
+    | h :: t -> (
+      match u h with
+      | TInt | TBool | TString | TLoc _ -> check_ibsl t
+      | _ -> raise (M.TypeError "type error: not Int, Bool, String, Loc")
+    )
+  in let _ = check_ibsl !ibsl in
   let rec transform: typ -> M.types = fun t ->
     match u t with
     | TInt -> M.TyInt
